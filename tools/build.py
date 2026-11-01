@@ -116,6 +116,25 @@ HERO_PHOTOS = {
     "kontakta-oss/lediga-tjanster": ("2025/04/DSC_6553-scaled.jpg", "Lykta i form av en färgad dodekaeder på en fönsterbänk"),
     "julbasar": ("2021/05/Adventstradgard-waldorf.jpg", "Adventsträdgård med ljus i en spiral av granris"),
 }
+QUICK = [
+    ("Sjukanmälan", "for-foraldrar/sjukanmalan"), ("Kalendarium", "kalendarium"), ("Skollunch", "om-oss/vegetarisk-skollunch"),
+    ("Ansök", "ansok"), ("Öppet hus", "oppethus"), ("Medarbetare", "om-oss/medarbetare"), ("Julbasar", "julbasar"), ("Kontakta oss", "kontakta-oss"),
+]
+GALLERY = [
+    ("2025/04/20241203_122415-scaled.jpg", "Adventsträdgård: ljus i äpplen längs en spiral av granris"),
+    ("2025/04/IMG_20220307_092108-scaled.jpg", "Krittavla med en borg och åkrar målade i färg"),
+    ("2025/04/20210909_154648-1-scaled.jpg", "Kojor byggda av grenar i skogen"),
+    ("2025/04/wladorf-klassrum-botanik-1.jpg", "Klassrum med botanikmålningar på tavlorna"),
+    ("2025/04/DSC_6553-scaled.jpg", "Lykta i form av en färgad dodekaeder på en fönsterbänk"),
+    ("2025/04/IMG_20250320_060951.jpg", "Solnedgång över en sjö under en klassresa"),
+    ("2025/04/1000011153.jpg", "Elever i siluett mot himlen på en fjälltopp"),
+    ("2025/04/IMG_20250316_170508.jpg", "Nybakat bröd vid en lägereld"),
+]
+GALLERY_PAGES = {"om-oss", "waldorfpedagogik", "for-foraldrar/arstidsfester", "oppethus", "ansok", "kontakta-oss", "grundskola", "om-oss/fritidshemmet"}
+PAGE_QUOTE = {"waldorfpedagogik": 0, "om-oss": 1, "om-oss/medarbetare": 2, "grundskola": 3}
+DEFAULT_RELATED = [("Vår pedagogik", "waldorfpedagogik"), ("Kalendarium", "kalendarium"), ("Ansök", "ansok"), ("Om oss", "om-oss")]
+PAGE_CARDS = {}  # path -> (photo, alt), filled in before the pages are rendered
+PEOPLE = []
 QUOTES = [
     ("Waldorfpedagogiken är en bildningsväg. Den är varken modern eller omodern. Den är tidlös.", "Åsa Gjesdahl", ""),
     ("Slöjden handlar om att utveckla självkänsla, frihet och autonomi – möjlighet att klara sig själv, och i en gemenskap vilja att kunna hjälpa andra.", "Helene Langborg", "lärare trä- och metallslöjd"),
@@ -146,26 +165,6 @@ def icon(name, size=22):
 
 
 BIRD = """<svg class="bird" viewBox="0 0 140 70" aria-hidden="true"><path class="wing far" d="M70 34C60 25 50 15 34 6c3 12 12 24 26 32z"/><path class="body" d="M3 57C14 47 34 41 54 36c20-5 34-8 49-10 11-2 22-5 29-4 4 .500 6 2 5 3.500-5 2-14 2-22 4-13 3-25 8-38 14-22 9-49 15-74 13z"/><path class="wing near" d="M76 34C60 26 44 15 18 3c5 17 19 32 44 39z"/></svg>"""
-
-
-def kid(variant):
-    hair = {
-        "pony": '<path d="M23 8c3-7 14-8 18-2 2 3 2 6 1 8-6-3-12-4-17-3-4 1-7 5-13 12-1-7 3-13 11-15z"/>',
-        "short": '<path d="M21 13c-1-8 8-12 15-10 5 1 7 6 6 11-7-3-14-4-21-1z"/>',
-        "bun": '<path d="M22 11c-5-1-7-8-2-10 4-1 6 1 7 3 5-2 13 0 15 9-7-3-14-4-20-2z"/>',
-    }[variant]
-    body = {
-        "pony": "M25 24h12l2 13 7 18H16l7-18z",
-        "short": "M24 24h13l-1 24H26z",
-        "bun": "M25 24h12l1 14 6 13H18l6-13z",
-    }[variant]
-    leg = '<path d="M26 45h9l-1 16 1 1-5 1-5-1z"/><g class="shin"><path d="M27 60h7l-2 16 7 2v2H28z"/></g>'
-    arm = '<path d="M27 25h7l-8 15-5-2z"/><g class="fore"><path d="M21 37l5 2 6 8-3 2z"/></g>'
-    return f"""<svg class="kid" viewBox="0 0 60 84" aria-hidden="true"><g class="bob">
-<g class="limb arm-b">{arm}</g><g class="limb leg-b">{leg}</g>
-<path d="{body}"/><path d="M28 18h6v8h-6z"/><circle cx="31" cy="13" r="9"/>{hair}
-<g class="limb leg-a">{leg}</g><g class="limb arm-a">{arm}</g>
-</g></svg>"""
 
 
 def flock(cls="", n=3):
@@ -283,6 +282,9 @@ def page(path, title, body, desc="", cls=""):
         else:
             nav_items += f'<li><a href="{href(target, base)}"{cur}>{label}</a></li>'
     parents = "".join(f'<li><a href="{href(t, base)}">{H.escape(l)}</a></li>' for l, t in PARENTS)
+    quick = "".join(f'<li><a href="{href(t, base)}">{H.escape(l)}</a></li>' for l, t in QUICK)
+    if path:
+        body += extras(path, base)
     head_desc = H.escape(desc or "Rudolf Steinerskolan är en waldorfskola i en grön oas nära Norrköpings stadskärna.", True)
     return f"""<!doctype html>
 <html lang="sv" data-base="{base}">
@@ -316,12 +318,14 @@ def page(path, title, body, desc="", cls=""):
 <button class="search-toggle" aria-expanded="false" aria-controls="search" aria-label="Sök">{icon("search", 22)}</button>
 </div>
 <div class="scrollbird" aria-hidden="true">{BIRD}</div>
-<div id="search" class="search" hidden><div class="wrap">
-<label for="q">Sök på webbplatsen</label>
-<input id="q" type="search" autocomplete="off" placeholder="Till exempel sjukanmälan eller julbasar">
-<ul id="results" aria-live="polite"></ul>
+<div id="search" class="search" role="search" hidden><div class="wrap">
+<div class="search-box">{icon("search", 22)}<label class="vh" for="q">Sök på webbplatsen</label><input id="q" type="search" autocomplete="off" placeholder="Sök sidor, medarbetare och datum"><button class="search-clear" type="button" aria-label="Rensa sökningen" hidden>{icon("close", 18)}</button></div>
+<p id="search-count" aria-live="polite"></p>
+<ul id="results"></ul>
+<div id="search-quick"><h3>Vanliga genvägar</h3><ul>{quick}</ul></div>
 </div></div>
 </header>
+<div class="search-scrim" hidden></div>
 <main id="content">
 {body}
 </main>
@@ -352,6 +356,52 @@ def page(path, title, body, desc="", cls=""):
 </body>
 </html>
 """
+
+
+def group_of(path):
+    groups = [[(l, t) for l, t in sub if not t.startswith("http")] for _, _, sub in NAV if sub] + [PARENTS]
+    return next((g for g in groups if any(t == path for _, t in g)), None)
+
+
+def subnav(path, base):
+    group = group_of(path)
+    if not group:
+        return ""
+    links = "".join(
+        f'<li><a href="{href(t, base)}"{" aria-current=page" if t == path else ""}>{H.escape(l)}</a></li>' for l, t in group
+    )
+    return f'<nav class="wrap subnav" aria-label="I det här avsnittet"><ul>{links}</ul></nav>'
+
+
+def drift_gallery(base):
+    cells = "".join(f'<li class="frame">{picture(s, base, 900, a)}</li>' for s, a in GALLERY)
+    return f'<ul class="drift-row" data-drift tabindex="0" aria-label="Bilder från skolan">{cells}</ul>'
+
+
+def extras(path, base):
+    """What every inner page ends with: a teacher's voice or the gallery where they fit, then where to go next."""
+    out = ""
+    if path in PAGE_QUOTE:
+        q, a, r = QUOTES[PAGE_QUOTE[path]]
+        out += f'<section class="quotes page-quote" aria-label="Röster från skolan"><div class="wrap narrow"><figure class="quote"><blockquote>{q}</blockquote><figcaption>{a}{", " + r if r else ""}</figcaption></figure></div></section>'
+    if path in GALLERY_PAGES:
+        out += f'<section class="drift page-drift" aria-label="Bilder från skolan">{drift_gallery(base)}</section>'
+    group = group_of(path)
+    options = [x for x in (group or []) if x[1] != path]
+    if group:
+        at = [t for _, t in group].index(path)
+        options = [group[(at + k) % len(group)] for k in range(1, len(group))]
+    options = [x for x in options + DEFAULT_RELATED if x[1] != path and x[1] in PAGE_CARDS]
+    picked, seen = [], set()
+    for label, target in options:
+        if target not in seen:
+            seen.add(target)
+            picked.append((label, target))
+    cards = ""
+    for label, target in picked[:3]:
+        src, alt = PAGE_CARDS[target]
+        cards += f'<li class="rel"><a href="{href(target, base)}"><span class="frame">{picture(src, base, 900, alt)}</span><strong>{H.escape(label)}</strong></a></li>'
+    return out + f'<section class="related wrap" aria-labelledby="rel-title"><h2 id="rel-title">Läs också</h2><ul>{cards}</ul></section>'
 
 
 def write(path, html_text):
@@ -442,14 +492,14 @@ def page_hero(path, title, base, banner=None, alt="", btn=None):
     if not src:
         src, alt = HERO_PHOTOS.get(path, (HOME_PHOTO, HOME_ALT))
     action = f'<div class="title-action">{button(btn["text"], fix_link(btn["href"], base), "big rose")}</div>' if btn else ""
-    kids = "".join(f'<div class="runner r{n}" data-runner="{n}">{kid(v)}</div>' for n, v in enumerate(("pony", "short", "bun")))
     return f"""<section class="page-hero" aria-labelledby="page-title">
 <div class="hero-media" data-hero-img>{picture(src, base, 1800, alt, lazy=False)}</div>
 <div class="hero-shade"></div>
 {flock("loop", 4)}
+<div class="blossoms" data-blossoms aria-hidden="true"></div>
 <div class="wrap title-row"><h1 id="page-title">{H.escape(title)}</h1>{action}</div>
-<div class="hill" data-hill><svg viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path d="" data-hill-path/></svg>{kids}</div>
-</section>{poster}"""
+<div class="hill" data-hill><svg viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path d="" data-hill-path/></svg><canvas class="kids"></canvas></div>
+</section>{subnav(path, base)}{poster}"""
 
 
 def media_html(media, base, round_media, heading):
@@ -597,6 +647,7 @@ def staff_page(data):
             )
             m = f'<a href="mailto:{mail}">{mail}</a>' if mail else ""
             search = H.escape(f"{name} {role}".lower(), True)
+            PEOPLE.append({"n": name, "r": role, "m": mail})
             cards.append(f'<li class="person" data-search="{search}"><div class="portrait">{pic}</div><div><h2>{H.escape(name)}</h2><p>{H.escape(role)}</p>{m}</div></li>')
             photo = None
     body = page_hero("om-oss/medarbetare", "Medarbetare på Rudolf Steinerskolan", base)
@@ -709,25 +760,12 @@ def home_page():
         f'<li><a href="{u}"{" target=_blank rel=noopener" if u.startswith("http") else ""}>{icon(i, 30)}<strong>{t}</strong><span>{d}</span></a></li>'
         for t, d, u, i in errands
     )
-    gallery = [
-        ("2025/04/20241203_122415-scaled.jpg", "Adventsträdgård: ljus i äpplen längs en spiral av granris"),
-        ("2025/04/IMG_20220307_092108-scaled.jpg", "Krittavla med en borg och åkrar målade i färg"),
-        ("2025/04/20210909_154648-1-scaled.jpg", "Kojor byggda av grenar i skogen"),
-        ("2025/04/wladorf-klassrum-botanik-1.jpg", "Klassrum med botanikmålningar på tavlorna"),
-        ("2025/04/DSC_6553-scaled.jpg", "Lykta i form av en färgad dodekaeder på en fönsterbänk"),
-        ("2025/04/IMG_20250320_060951.jpg", "Solnedgång över en sjö under en klassresa"),
-        ("2025/04/1000011153.jpg", "Elever i siluett mot himlen på en fjälltopp"),
-        ("2025/04/IMG_20250316_170508.jpg", "Nybakat bröd vid en lägereld"),
-    ]
-    gallery_html = "".join(
-        f'<li class="frame">{picture(s, base, 900, a)}</li>' for s, a in gallery
-    )
-    kids = "".join(f'<div class="runner r{n}" data-runner="{n}">{kid(v)}</div>' for n, v in enumerate(("pony", "short", "bun")))
     body = f"""<div class="hero-wrap">
 <section class="hero" aria-labelledby="hero-title">
 <div class="hero-media" data-hero-img>{picture(HOME_PHOTO, base, 1920, HOME_ALT, lazy=False)}</div>
 <div class="hero-shade"></div>
 {flock("loop", 5)}
+<div class="blossoms" data-blossoms aria-hidden="true"></div>
 <div class="wrap hero-grid">
 <div class="hero-copy">
 <h1 id="hero-title"><span>Välkommen till</span> Rudolf Steinerskolan</h1>
@@ -735,7 +773,7 @@ def home_page():
 <p class="btn-row"><a class="btn big" href="{KNACK}" target="_blank" rel="noopener">Ansök här</a> <a class="btn big rose" href="om-oss/">Om oss</a></p>
 </div>
 </div>
-<div class="hill" data-hill><svg viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path d="" data-hill-path/></svg>{kids}</div>
+<div class="hill" data-hill><svg viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path d="" data-hill-path/></svg><canvas class="kids"></canvas></div>
 </section>
 <aside class="next-up" aria-labelledby="next-title"><h2 id="next-title">På gång</h2><ol id="next-events"><li><a href="kalendarium/">Se hela kalendariet</a></li></ol><a class="more" href="kalendarium/">Hela kalendariet {icon("arrow", 18)}</a></aside>
 </div>
@@ -751,7 +789,7 @@ def home_page():
 <section class="invite"><div class="wrap narrow"><h2>Söker du en lugn och trivsam skolmiljö med engagerade och trygga pedagoger där lärandet går hand i hand med barnets utveckling?</h2>
 <p class="btn-row"><a class="btn big" href="{KNACK}" target="_blank" rel="noopener">Ansök här</a> <a class="btn big rose" href="waldorfpedagogik/">Läs mer</a></p></div></section>
 <section class="drift band" aria-labelledby="drift-title"><div class="wrap drift-head"><h2 id="drift-title">Norrköpings Waldorfskola ett stenkast från centrum, omgiven av en blomstrande trädgård</h2><a class="btn" href="{INSTAGRAM}" target="_blank" rel="noopener">Följ på Instagram</a></div>
-<ul class="drift-row" data-drift tabindex="0" aria-label="Bilder från skolan">{gallery_html}</ul></section>"""
+{drift_gallery(base)}</section>"""
     return page("", "Välkommen", body, cls="home")
 
 
@@ -792,6 +830,11 @@ def build():
         "ansok": lambda d: generic("ansok", d, {"title": "Ansök"}),
         "artiklar": lambda d: generic("artiklar", {"title": "Nyheter", "blocks": [{"t": "h", "tag": "h1", "html": "Nyheter"}, {"t": "h", "tag": "h2", "html": "Möt gamla elever från skolan – del 1"}, {"t": "p", "tag": "p", "html": "Rudolf Steinerskolan i Norrköping har funnits i nästan 50 år. Nu har vi träffat några av de elever som gått på skolan tidigare. Vad gör de nu och hur ser de på sin tid på ”Kullen”?"}, {"t": "btn", "href": "/2021/08/28/mot-gamla-elever-fran-skolan-del-1/", "text": "Läs mer"}]}),
     }
+    for path, data in pages.items():
+        banner = sectionize(data["blocks"])[1]
+        own = banner["src"] if banner and not LETTERED.search(banner["src"]) else None
+        PAGE_CARDS[path] = (own, "") if own else HERO_PHOTOS.get(path, (HOME_PHOTO, HOME_ALT))
+
     index = []
     for path, data in pages.items():
         if path == "oppethus":
@@ -802,7 +845,13 @@ def build():
                 data["blocks"] = data["blocks"][:cut]
         write(path, special.get(path, lambda d: generic(path, d))(data))
         text = " ".join(plain(b.get("html") or b.get("text") or "") for b in data["blocks"])
-        index.append({"t": data["title"].replace("START", "Startsidan"), "u": path, "x": text[:6000]})
+        written = (SITE / path / "index.html").read_text(encoding="utf-8")
+        secs = [
+            {"h": x["h"], "id": slug(x["h"]), "x": " ".join(plain(b.get("html") or b.get("text") or "") for b in x["body"])[:1500]}
+            for x in sectionize(data["blocks"])[4]
+            if f'id="{slug(x["h"])}"' in written
+        ]
+        index.append({"t": data["title"].replace("START", "Startsidan"), "u": path, "x": text[:6000], "s": secs})
 
     posts = json.loads((ROOT / "content/posts.json").read_text(encoding="utf-8"))
     for p in posts:
@@ -824,7 +873,7 @@ def build():
         for _, s, e, label, text in calendar_entries()
     ]
     (SITE / "assets/data.js").write_text(
-        "window.SEARCH=" + json.dumps(index, ensure_ascii=False) + ";\nwindow.EVENTS=" + json.dumps(events, ensure_ascii=False) + ";\n",
+        "window.SEARCH=" + json.dumps(index, ensure_ascii=False) + ";\nwindow.EVENTS=" + json.dumps(events, ensure_ascii=False) + ";\nwindow.PEOPLE=" + json.dumps(PEOPLE, ensure_ascii=False) + ";\n",
         encoding="utf-8",
     )
     for name in ("site.css", "site.js"):
