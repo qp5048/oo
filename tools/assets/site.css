@@ -183,7 +183,9 @@ input:focus,textarea:focus{border-color:var(--olive-deep)}
 .next-up{position:relative;z-index:5;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px clamp(20px,3vw,40px);margin-top:clamp(6px,1vw,14px);padding:16px clamp(18px,2.500vw,30px);background:#fbf7f1;border:1px solid #e4d9cc;border-radius:var(--radius);box-shadow:0 8px 22px #3f310021}
 .next-up h2{font-size:1.45rem}
 .next-up ol{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px clamp(14px,2vw,28px)}
-.next-up li{display:flex;flex-direction:column;gap:1px;padding:2px 0 2px 14px;border-left:2px solid var(--rose);font-size:.92rem;line-height:1.4}
+.next-up li{display:flex;flex-direction:column;gap:1px;padding:2px 0;font-size:.92rem;line-height:1.4}
+.next-up li+li{padding-left:clamp(14px,2vw,28px);box-shadow:-1px 0 0 var(--line)}
+.next-up .when::before{content:"";display:inline-block;width:7px;height:7px;margin-right:7px;border-radius:50%;background:var(--rose-deep);vertical-align:.12em}
 .next-up time,.next-up .when{font-weight:700;color:var(--olive-ink);font-variant-numeric:tabular-nums}
 .next-up li:only-child{display:block;grid-column:1/-1;border:0;padding:0}
 .more{display:inline-flex;gap:6px;align-items:center;font-weight:600;font-size:.92rem;margin-top:8px}
@@ -385,6 +387,7 @@ legend{font-weight:600;color:var(--ink);padding:0;margin-bottom:4px}
   .hero-copy{max-width:640px}
   .next-up{grid-template-columns:1fr;align-items:start}
   .next-up ol{grid-template-columns:1fr}
+  .next-up li+li{padding:8px 0 0;box-shadow:0 -1px 0 var(--line)}
   .errands ul{grid-template-columns:repeat(2,1fr)}
   .errands li:first-child{grid-column:1/-1}
   #results{grid-template-columns:minmax(0,1fr)}
@@ -413,7 +416,6 @@ legend{font-weight:600;color:var(--ink);padding:0;margin-bottom:4px}
   .hero-media img{object-position:80% 60%}
   .hero .hero-media img{object-position:var(--pos-s,80% 60%)}
   .hero-dots{top:10px;bottom:auto;left:calc(var(--gut) - 9px);right:auto}
-  .next-up li{padding-left:12px}
   .hero-copy>p:not(.btn-row){font-size:.98rem}
   .btn.big{padding:.72em 1.2em}
   .errands a{padding:12px 6px}
