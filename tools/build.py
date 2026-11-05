@@ -100,6 +100,16 @@ V27-30 – Fritidshemmet stängt""".split("\n")
 MONTHS = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "maj": 5, "jun": 6, "jul": 7, "aug": 8, "sep": 9, "okt": 10, "nov": 11, "dec": 12}
 HOME_PHOTO = "2021/02/rudolfsteinerskolan-stathoga-herrgard-waldorf-appelblommor.jpg"
 HOME_ALT = "Blommande äppelträd framför skolans röda hus på en grön kulle"
+# The home hero turns through the school's own photos of its buildings: (photo, alt, focus, focus on phones, crop).
+HOME_SLIDES = [
+    (HOME_PHOTO, HOME_ALT, "62% 60%", "80% 60%", None),
+    ("2021/05/Valkommen-till-rudolfsteinerskolan.jpg", "Skolans röda hus med skylten Välkommen till Rudolf Steinerskolan bakom tulpaner", "68% 40%", "70% 40%", None),
+    ("2021/06/Rudolfsteinerskolan-skolgard-tradgard-utemiljo.jpg", "Rött skolhus med en rund rabatt av tulpaner på skolgården", "40% 48%", "30% 50%", None),
+    # The original is two photos side by side; the right one, past the flagpole, shows the houses round the yard.
+    ("2021/05/rudolfsteinerskolan-skolgard.jpg", "Skolgården med skolans ljusa och röda hus", "50% 45%", "45% 50%", (1012, 0, 1920, 500)),
+]
+# The logo cut into its lettering and its three swans, so the swans can glide (boxes in the 420x131 file).
+LOGO_PARTS = [("word", (7, 1, 413, 33)), ("swan-1", (2, 83, 139, 128)), ("swan-2", (141, 73, 275, 112)), ("swan-3", (277, 49, 418, 112))]
 # Pages whose original has no photo of its own (or only a lettered poster) borrow one from the school's gallery.
 HERO_PHOTOS = {
     "kalendarium": ("2025/04/20241203_122415-scaled.jpg", "Adventsträdgård: ljus i äpplen längs en spiral av granris"),
@@ -188,15 +198,19 @@ def fetch(rel):
     return dest
 
 
-def img_url(rel, width=1400):
+def img_url(rel, width=1400, crop=None):
     """Writes a resized webp and returns its path relative to site/."""
     rel = H.unescape(rel).strip("'\" ")
     name = re.sub(r"[^a-zA-Z0-9]+", "-", rel.rsplit(".", 1)[0]).lower().strip("-")
+    if crop:
+        name += "-c" + "-".join(map(str, crop))
     out = f"assets/img/{name}-{width}.webp"
     if out not in used:
         target = SITE / out
         if not target.exists():
             im = Image.open(fetch(rel))
+            if crop:
+                im = im.crop(crop)
             im = im.convert("RGBA" if im.mode in ("RGBA", "LA", "P") else "RGB")
             if im.width > width:
                 im = im.resize((width, round(im.height * width / im.width)), Image.LANCZOS)
@@ -207,12 +221,21 @@ def img_url(rel, width=1400):
     return out
 
 
-def picture(rel, base, width=1400, alt="", cls="", lazy=True):
-    u = img_url(rel, width)
+def picture(rel, base, width=1400, alt="", cls="", lazy=True, crop=None, attrs=""):
+    u = img_url(rel, width, crop)
     w, h = used[u]
     load = ' loading="lazy" decoding="async"' if lazy else ' fetchpriority="high"'
     c = f' class="{cls}"' if cls else ""
-    return f'<img{c} src="{base}{u}" width="{w}" height="{h}" alt="{H.escape(alt, True)}"{load}>'
+    return f'<img{c} src="{base}{u}" width="{w}" height="{h}" alt="{H.escape(alt, True)}"{load}{attrs}>'
+
+
+def logo_art(base):
+    """The header logo, put back together from its parts at their places in the original."""
+    parts = "".join(
+        f'<img class="logo-{n}" src="{base}assets/logo-{n}.png" alt="" style="left:{x0 / 4.2:.2f}%;top:{y0 / 1.31:.2f}%;width:{(x1 - x0) / 4.2:.2f}%">'
+        for n, (x0, y0, x1, y1) in LOGO_PARTS
+    )
+    return f'<span class="logo-art">{parts}</span>'
 
 
 # ---------- links and text ----------
@@ -308,7 +331,7 @@ def page(path, title, body, desc="", cls=""):
 </ul>
 </div></div>
 <header class="site-head"><div class="wrap">
-<a class="logo" href="{base or './'}" aria-label="Rudolf Steinerskolan, startsidan"><img src="{base}assets/logo.png" width="420" height="131" alt=""></a>
+<a class="logo" href="{base or './'}" aria-label="Rudolf Steinerskolan, startsidan">{logo_art(base)}</a>
 <button class="menu-toggle" aria-expanded="false" aria-controls="mainnav">{icon("menu", 26)}<span>Meny</span></button>
 <nav id="mainnav" aria-label="Huvudmeny"><ul class="main">{nav_items}
 <li class="only-small"><a href="{href("for-foraldrar", base)}">Föräldrar</a></li>
@@ -760,9 +783,13 @@ def home_page():
         f'<li><a href="{u}"{" target=_blank rel=noopener" if u.startswith("http") else ""}>{icon(i, 30)}<strong>{t}</strong><span>{d}</span></a></li>'
         for t, d, u, i in errands
     )
-    body = f"""<div class="hero-wrap">
-<section class="hero" aria-labelledby="hero-title">
-<div class="hero-media" data-hero-img>{picture(HOME_PHOTO, base, 1920, HOME_ALT, lazy=False)}</div>
+    slides = "".join(
+        picture(src, base, 1920, alt, "on" if n == 0 else "", lazy=n > 0, crop=crop,
+                attrs=f' style="--pos:{pos};--pos-s:{pos_s}"' + (' aria-hidden="true"' if n else ""))
+        for n, (src, alt, pos, pos_s, crop) in enumerate(HOME_SLIDES)
+    )
+    body = f"""<section class="hero" aria-labelledby="hero-title">
+<div class="hero-media" data-hero-img data-slides>{slides}</div>
 <div class="hero-shade"></div>
 {flock("loop", 5)}
 <div class="blossoms" data-blossoms aria-hidden="true"></div>
@@ -775,8 +802,7 @@ def home_page():
 </div>
 <div class="hill" data-hill><svg viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path d="" data-hill-path/></svg><canvas class="kids"></canvas></div>
 </section>
-<aside class="next-up" aria-labelledby="next-title"><h2 id="next-title">På gång</h2><ol id="next-events"><li><a href="kalendarium/">Se hela kalendariet</a></li></ol><a class="more" href="kalendarium/">Hela kalendariet {icon("arrow", 18)}</a></aside>
-</div>
+<aside class="next-up wrap" aria-labelledby="next-title"><h2 id="next-title">På gång</h2><ol id="next-events"><li><a href="kalendarium/">Se hela kalendariet</a></li></ol><a class="more" href="kalendarium/">Hela kalendariet {icon("arrow", 18)}</a></aside>
 <nav class="errands wrap" aria-label="Snabblänkar"><ul>{errand_html}</ul></nav>
 <section class="teasers wrap" aria-label="Lär känna skolan">{teaser_html}</section>
 <section class="quotes" aria-label="Röster från skolan" data-quotes><div class="wrap narrow">{quotes}
@@ -882,6 +908,8 @@ def build():
     # Brand files, taken unchanged from the school's site.
     logo = Image.open(fetch("2021/02/RudolfSteinerskolan-Logotyp-white-1000px-e1614496411406.png"))
     logo.save(SITE / "assets/logo.png")
+    for n, box in LOGO_PARTS:
+        logo.crop(box).save(SITE / f"assets/logo-{n}.png")
     Image.open(fetch("2021/03/Favicon_fagel.png")).save(SITE / "assets/favicon.png")
     Image.open(fetch("2021/03/Bakgrund-papper-ljusare.jpg")).convert("RGB").save(SITE / "assets/paper.webp", "WEBP", quality=70)
     head = Image.open(fetch("2021/03/Header-RS4-scaled.jpg")).convert("RGB")

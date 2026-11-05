@@ -483,6 +483,62 @@
     });
   }
 
+  /* ---------- home photos: another view of the school every five seconds ---------- */
+  var slideBox = $('[data-slides]');
+  if (slideBox && slideBox.children.length > 1) {
+    var slides = $$('img', slideBox);
+    var slideAt = 0;
+    var held = false;
+    var dots = document.createElement('div');
+    dots.className = 'hero-dots';
+    dots.innerHTML = slides.map(function (s, n) {
+      return '<button type="button" aria-label="Visa bild ' + (n + 1) + ' av ' + slides.length + '"' + (n ? '' : ' aria-current="true"') + '></button>';
+    }).join('');
+    slideBox.parentNode.appendChild(dots);
+    var dotBtns = $$('button', dots);
+    var showSlide = function (n) {
+      slides[slideAt].classList.remove('on');
+      slides[slideAt].setAttribute('aria-hidden', 'true');
+      dotBtns[slideAt].removeAttribute('aria-current');
+      slideAt = (n + slides.length) % slides.length;
+      slides[slideAt].classList.add('on');
+      slides[slideAt].removeAttribute('aria-hidden');
+      dotBtns[slideAt].setAttribute('aria-current', 'true');
+    };
+    var slideTimer;
+    var startSlides = function () {
+      clearInterval(slideTimer);
+      if (calm) return; // with reduced motion the photo only changes from the dots
+      slideTimer = setInterval(function () {
+        var next = slides[(slideAt + 1) % slides.length];
+        if (!held && !document.hidden && next.complete) showSlide(slideAt + 1);
+      }, 5000);
+    };
+    dotBtns.forEach(function (b, n) {
+      b.addEventListener('click', function () { showSlide(n); startSlides(); });
+    });
+    // holds still while someone reads the greeting or reaches for a dot
+    $$('.hero-copy, .hero-dots').forEach(function (el) {
+      el.addEventListener('mouseenter', function () { held = true; });
+      el.addEventListener('mouseleave', function () { held = false; });
+    });
+    startSlides();
+  }
+
+  /* ---------- buttons: a ripple from where they were pressed ---------- */
+  if (!calm) document.addEventListener('pointerdown', function (e) {
+    var b = e.target.closest('.btn');
+    if (!b) return;
+    var r = b.getBoundingClientRect();
+    var dot = document.createElement('span');
+    dot.className = 'ripple';
+    dot.style.left = (e.clientX - r.left) + 'px';
+    dot.style.top = (e.clientY - r.top) + 'px';
+    dot.style.setProperty('--s', (Math.hypot(r.width, r.height) / 5).toFixed(1)); // the 10px dot grows to cover the button from any point
+    dot.addEventListener('animationend', function () { dot.remove(); });
+    b.appendChild(dot);
+  });
+
   /* ---------- scroll: photos, progress bird, header ---------- */
   var parallax = $$('[data-parallax]').map(function (el) {
     return { el: el, img: el.querySelector('img'), k: Number(el.dataset.parallax) };
@@ -546,7 +602,7 @@
 
   /* gentle arrival for photo frames; everything is visible without JS */
   if (!calm && 'IntersectionObserver' in window) {
-    var targets = $$('.teaser, .sec-media, .poster-frame, .poster-inline .frame, .cal-row, .person, .doc-row');
+    var targets = $$('.teaser, .sec-media, .poster-frame, .poster-inline .frame, .cal-row, .person, .doc-row, .prose > *, .sec-text > *, .cell > *, .related > h2, .rel, .toc, .quote:not([hidden]), .menu tr, .cal-grid h2, .drift-head, .invite h2, .invite .btn-row, .errands li, .demo-form, .note');
     var seen = new IntersectionObserver(function (es) {
       es.forEach(function (e) {
         if (e.isIntersecting) { e.target.classList.add('in'); seen.unobserve(e.target); }
@@ -556,7 +612,8 @@
       var r = t.getBoundingClientRect();
       if (r.top < vh * .92) return;
       t.classList.add('rise');
-      if (t.matches('.cal-row, .person, .doc-row')) t.style.transitionDelay = (Array.prototype.indexOf.call(t.parentNode.children, t) % 4) * 60 + 'ms';
+      // neighbours that arrive together come up one after another
+      if (!t.matches('.sec-media, .poster-frame, .poster-inline .frame')) t.style.transitionDelay = (Array.prototype.indexOf.call(t.parentNode.children, t) % 4) * 70 + 'ms';
       seen.observe(t);
     });
   }
